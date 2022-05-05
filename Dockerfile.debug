@@ -1,0 +1,20 @@
+FROM golang:alpine as builder
+
+ARG APP=app
+WORKDIR /$APP
+
+COPY $APP.go app.go
+
+RUN apk --no-cache add gcc libc-dev
+RUN CGO_ENABLED=0 go build -o /app -gcflags 'all=-N -l' app.go # to see all flags run `go tool compile -help`
+
+RUN apk add git bash
+RUN apk add --no-cache git
+RUN go install github.com/go-delve/delve/cmd/dlv@latest
+
+FROM golang:alpine
+
+COPY --from=builder /app /
+COPY --from=builder /go/bin/dlv /
+
+ENTRYPOINT ["/dlv", "exec", "/app", "--continue", "--accept-multiclient", "--api-version=2", "--headless", "--listen=:40000", "--log", "--"]

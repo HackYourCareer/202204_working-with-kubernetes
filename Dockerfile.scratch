@@ -1,0 +1,13 @@
+FROM golang:latest as builder
+
+ARG APP=app
+WORKDIR /$APP
+
+COPY $APP.go app.go
+
+RUN CGO_ENABLED=0 go build -o /app app.go
+
+FROM scratch
+COPY --from=builder /app .
+
+ENTRYPOINT ["/app"] 
